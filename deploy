@@ -1,0 +1,9 @@
+#!/bin/bash
+DEST_HOST="$1"
+DEST_FOLDER="$2"
+echo DEST_HOST $DEST_HOST
+echo DEST_FOLDER $DEST_FOLDER
+ssh $DEST_HOST mkdir -p $DEST_FOLDER &&
+sed 's#/dist#dist#' index.html | ssh $DEST_HOST "cat >\"$DEST_FOLDER/index.html\"" &&
+scp -r dist src $DEST_HOST:$DEST_FOLDER &&
+rm -rf dist
