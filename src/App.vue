@@ -39,7 +39,17 @@
     },
     computed: {
       eventTypes() {
-        return ['bbi', 'hem']
+        let typeSet = new Set();
+        let types = [];
+        for (let i = this.events.length - 1; i >= 0; --i) {
+          let type = this.events[i].type;
+          console.log('t', type, 1);
+          if (!typeSet.has(type)) {
+            typeSet.add(type);
+            types.push(type);
+          }
+        }
+        return types.reverse()
       }
     }
   }
