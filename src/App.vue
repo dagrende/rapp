@@ -48,11 +48,7 @@
     name: 'app',
     data () {
       return {
-        events: [
-          {id: uuidv4(), type: 'bbi', startTime: moment(), comment: 'hej du glade'},
-          {id: uuidv4(), type: 'hem', startTime: moment(), comment: ''},
-          {id: uuidv4(), type: 'bbi', startTime: moment(), comment: 'tag en spade'}
-        ],
+        events: [],
         eventType: '',
         selectedEventIndex: null,
       }
@@ -69,11 +65,11 @@
         let newEvent = {id: uuidv4(), type: eventType, startTime: moment(), comment: ''};
         this.events.push(newEvent)
         this.selectEvent(null);
-        createEvent(newEvent);
+        this.createEvent(newEvent);
       },
       changeEvent(event, fieldName, value) {
         event[fieldName] = value;
-        saveEvent(newEvent);
+        this.saveEvent(event);
       },
       createEvent(event) {
         console.log('createEvent(',JSON.stringify(event),')');
@@ -85,7 +81,11 @@
     },
     created() {
       console.log('created');
-      
+      this.events = [
+        {id: uuidv4(), type: 'bbi', startTime: moment(), comment: 'hej du glade'},
+        {id: uuidv4(), type: 'hem', startTime: moment(), comment: ''},
+        {id: uuidv4(), type: 'bbi', startTime: moment(), comment: 'tag en spade'}
+      ];
     },
     computed: {
       eventTypes() {
