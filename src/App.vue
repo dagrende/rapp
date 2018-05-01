@@ -14,11 +14,11 @@
             @focus="$event.target.select()">
           <span :hidden="i == selectedEventIndex">{{event.type}}</span>
           <span class="filler"></span>
-          <input type="text" :value="event.startTime.format('YY-MM-DD HH:mm')"
-            @change="changeEvent(event, 'startTime', moment($event.target.value, 'YY-MM-DD HH:mm'))"
+          <input type="text" :value="formatDate(event.startTime, 'YY-MM-DD HH:mm')"
+            @change="changeEvent(event, 'startTime', parseDate($event.target.value, 'YY-MM-DD HH:mm'))"
             :hidden="i != selectedEventIndex"
             @focus="$event.target.select()">
-          <span :hidden="i == selectedEventIndex">{{event.startTime.format('YY-MM-DD HH:mm')}}</span>
+          <span :hidden="i == selectedEventIndex">{{formatDate(event.startTime, 'YY-MM-DD HH:mm')}}</span>
         </div>
         <div class="row2">
           <input type="text"
@@ -34,7 +34,7 @@
     </div>
     <div class="event-type-filter">
       <input type="text" v-model="eventType">
-      <button type="button" @click="addEvent(eventType)":disabled="eventType.trim() === ''">Start</button>
+      <button type="button" @click="addEvent(eventType)" :disabled="eventType.trim() === ''">Start</button>
     </div>
     <div class="event-types">
       <div class="event-type" v-for="eventType in eventTypes" @click="addEvent(eventType)">
@@ -45,7 +45,9 @@
 </template>
 
 <script>
-  import moment from 'moment-msdate';
+  import formatDate from 'date-fns/format';
+  import parseDate from 'date-fns/parse';
+  import compareDateAsc from 'date-fns/compare_asc';
   import uuidv4 from 'uuid/v4';
 
   const CLIENT_ID = '781056449218-gff1pg8oqs62ovk0et70mtgchjbp04l8.apps.googleusercontent.com';
@@ -54,10 +56,14 @@
   const spreadsheetId = '1lDFO2rjOaff566CRaiqbT9PIoVd3XMRSe45i3Z8SOy0';
 
   function sheetsToJsEpoch(sheetSerialNo) {
-    return Math.round((sheetSerialNo - (25567 + 2))*86400)*1000
+    return (sheetSerialNo - (25567 + 2))*86400*1000
   }
   function jsToSheetsEpoch(jsSerialNo) {
     return jsSerialNo / 86400 / 1000 + 25567 + 2
+  }
+
+  function compareEventsByStartDate(a, b) {
+    return compareDateAsc(a.startTime, b.startTime)
   }
 
   export default {
@@ -93,10 +99,10 @@
         }
       },
       addEvent(eventType) {
-        let newEvent = {id: uuidv4(), type: eventType, startTime: moment(), comment: ''};
+        let newEvent = {id: uuidv4(), type: eventType, startTime: new Date(), comment: ''};
         this.events.push(newEvent);
         this.selectEvent(null);
-        this.sortEvents();
+        this.events.sort(compareEventsByStartDate);
         this.createEvent(newEvent);
       },
       changeEvent(event, fieldName, value) {
@@ -108,7 +114,7 @@
       createEvent(event) {
         console.log('createEvent(',JSON.stringify(event),')');
         var values = [
-          [event.id, event.type, event.startTime.toOADate(), event.comment],
+          [event.id, event.type, jsToSheetsEpoch(event.startTime), event.comment],
         ];
         var body = {
           values: values
@@ -123,9 +129,6 @@
           console.log(`${result.updates.updatedCells} cells appended.`)
         });
       },
-      sortEvents() {
-        this.events.sort((a, b)=>b.startTime.toOADate() < a.startTime.toOADate())
-      },
       fetchEvents() {
         console.log('fetchEvents');
         let self = this;
@@ -135,17 +138,18 @@
           valueRenderOption: 'UNFORMATTED_VALUE',
           dateTimeRenderOption: 'SERIAL_NUMBER'
         }).then(function(response) {
+          console.log('fetchEvents response');
           var range = response.result;
           if (range.values && range.values.length > 0) {
             let events = [];
             for (let i = 0; i < range.values.length; i++) {
               var row = range.values[i];
               if (row[0]) {
-                events.push({rowI: i + 2, id: row[0], type: row[1], startTime: moment.fromOADate(row[2], moment().utcOffset()), comment: row[3]})
+                events.push({rowI: i + 2, id: row[0], type: row[1], startTime: new Date(sheetsToJsEpoch(row[2])), comment: row[3]})
+                console.log('read event', events[events.length - 1]);
               }
             }
-            self.events = events;
-            self.sortEvents();
+            self.events = events.sort(compareEventsByStartDate);
           }
         }, function(response) {
           console.log('Error:', response.result.error.message);
@@ -157,7 +161,7 @@
         console.log('saveEvent(', event,')');
         var body = {
           values: [
-            [event.id, event.type, event.startTime.toOADate(), event.comment],
+            [event.id, event.type, jsToSheetsEpoch(event.startTime), event.comment],
           ]
         };
         gapi.client.sheets.spreadsheets.values.update({
@@ -173,7 +177,8 @@
       deleteEvent(event) {
         //TODO delete event with id event.id
       },
-      moment,
+      formatDate,
+      parseDate,
       auth (immediate) {
         console.log('Start oauth...');
         gapi.auth.authorize(
