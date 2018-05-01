@@ -1,32 +1,32 @@
 <template>
   <div id="app">
-    <div class="events" @click="selectedEventIndex = null">
+    <div class="events" @click="selectedEventId = null">
       <div class="">
         <button type="button" @click="handleAuthClick" :disabled="isSignedIn">login</button>
         <button type="button" @click="handleSignoutClick" :disabled="!isSignedIn">logout</button>
       </div>
-      <div class="event" v-for="(event, i) in events"
-        @click="selectEvent(events.indexOf(event)); $event.stopPropagation()"
-        :class="{selected: i === selectedEventIndex}">
+      <div class="event" v-for="(event, i) in eventsLatestFirst"
+        @click="selectEvent(event.id); $event.stopPropagation()"
+        :class="{selected: event.id === selectedEventId}">
         <div class="row1">
           <input type="text" :value="event.type" @change="changeEvent(event, 'type', $event.target.value)"
-            :hidden="i != selectedEventIndex"
+            :hidden="event.id !== selectedEventId"
             @focus="$event.target.select()">
-          <span :hidden="i == selectedEventIndex">{{event.type}}</span>
+          <span :hidden="event.id === selectedEventId">{{event.type}}</span>
           <span class="filler"></span>
           <input type="text" :value="formatDate(event.startTime, 'YY-MM-DD HH:mm')"
-            @change="changeEvent(event, 'startTime', parseDate($event.target.value, 'YY-MM-DD HH:mm'))"
-            :hidden="i != selectedEventIndex"
+            @change="changeEvent(event, 'startTime', parseDateStd($event.target.value))"
+            :hidden="event.id !== selectedEventId"
             @focus="$event.target.select()">
-          <span :hidden="i == selectedEventIndex">{{formatDate(event.startTime, 'YY-MM-DD HH:mm')}}</span>
+          <span :hidden="event.id === selectedEventId">{{formatDate(event.startTime, 'YY-MM-DD HH:mm')}}</span>
         </div>
         <div class="row2">
           <input type="text"
             :value="event.comment"
             @change="changeEvent(event, 'comment', $event.target.value)"
-            :hidden="i != selectedEventIndex"
+            :hidden="event.id !== selectedEventId"
             @focus="$event.target.select()">
-          <span :hidden="i == selectedEventIndex">{{event.comment}}</span>
+          <span :hidden="event.id === selectedEventId">{{event.comment}}</span>
         </div>
       </div>
       <div class="event dummy-event">
@@ -72,11 +72,14 @@
       return {
         events: [],
         eventType: '',
-        selectedEventIndex: null,
+        selectedEventId: null,
         isSignedIn: false
       }
     },
     computed: {
+      eventsLatestFirst() {
+        return [...this.events].sort((a, b)=>compareEventsByStartDate(b, a))
+      },
       eventTypes() {
         let typeSet = new Set();
         let types = [];
@@ -91,11 +94,16 @@
       }
     },
     methods: {
-      selectEvent(i) {
-        if (this.selectedEventIndex === i) {
+      formatDate,
+      parseDateStd(s) {
+        return parseDate('20' + s.replace(' ', 'T'))
+      },
+      selectEvent(id) {
+        console.log('selectEvent(',id,')');
+        if (this.selectedEventId === id) {
           //this.selectedEventIndex = null;
         } else {
-          this.selectedEventIndex = i;
+          this.selectedEventId = id;
         }
       },
       addEvent(eventType) {
@@ -146,7 +154,6 @@
               var row = range.values[i];
               if (row[0]) {
                 events.push({rowI: i + 2, id: row[0], type: row[1], startTime: new Date(sheetsToJsEpoch(row[2])), comment: row[3]})
-                console.log('read event', events[events.length - 1]);
               }
             }
             self.events = events.sort(compareEventsByStartDate);
@@ -177,8 +184,6 @@
       deleteEvent(event) {
         //TODO delete event with id event.id
       },
-      formatDate,
-      parseDate,
       auth (immediate) {
         console.log('Start oauth...');
         gapi.auth.authorize(
