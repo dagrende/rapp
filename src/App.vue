@@ -49,7 +49,7 @@
   import uuidv4 from 'uuid/v4';
 
   const CLIENT_ID = '781056449218-gff1pg8oqs62ovk0et70mtgchjbp04l8.apps.googleusercontent.com';
-  const API_KEY = 'AIzaSyBHbnon2LBBMsE6te0GgUNqFBrNElWApnY';
+  // const API_KEY = 'AIzaSyBHbnon2LBBMsE6te0GgUNqFBrNElWApnY';
   const DISCOVERY_DOCS = ["https://sheets.googleapis.com/$discovery/rest?version=v4"];
   const SCOPES = "https://www.googleapis.com/auth/spreadsheets";
   const spreadsheetId = '1lDFO2rjOaff566CRaiqbT9PIoVd3XMRSe45i3Z8SOy0';
@@ -108,7 +108,6 @@
       },
       createEvent(event) {
         console.log('createEvent(',JSON.stringify(event),')');
-        console.log('jsepo', jsToSheetsEpoch(event.startTime.seconds()));
         var values = [
           [event.id, event.type, event.startTime.toOADate(), event.comment],
         ];
@@ -126,7 +125,7 @@
         });
       },
       sortEvents() {
-        this.events.sort((a, b)=>b.startTime.isBefore(a.startTime))
+        this.events.sort((a, b)=>b.startTime.toOADate() < a.startTime.toOADate())
       },
       fetchEvents() {
         let self = this;
@@ -142,7 +141,7 @@
             for (let i = 0; i < range.values.length; i++) {
               var row = range.values[i];
               if (row[0]) {
-                console.log('fetched date', moment.fromOADate(row[2]));
+                console.log('fetched date', row[1], moment.fromOADate(row[2]));
                 events.push({rowI: i + 2, id: row[0], type: row[1], startTime: moment.fromOADate(row[2], moment().utcOffset()), comment: row[3]})
               }
             }
@@ -197,7 +196,7 @@
       initClient() {
         let self = this;
         gapi.client.init({
-          apiKey: API_KEY,
+          // apiKey: API_KEY,
           clientId: CLIENT_ID,
           discoveryDocs: DISCOVERY_DOCS,
           scope: SCOPES
