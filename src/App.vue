@@ -49,6 +49,7 @@
   import parseDate from 'date-fns/parse';
   import compareDateAsc from 'date-fns/compare_asc';
   import uuidv4 from 'uuid/v4';
+  import DateTimePicker from './DateTimePicker.vue';
 
   const CLIENT_ID = '781056449218-gff1pg8oqs62ovk0et70mtgchjbp04l8.apps.googleusercontent.com';
   const DISCOVERY_DOCS = ["https://sheets.googleapis.com/$discovery/rest?version=v4"];
@@ -75,6 +76,9 @@
         selectedEventId: null,
         isSignedIn: false
       }
+    },
+    components: {
+      DateTimePicker
     },
     computed: {
       eventsLatestFirst() {
